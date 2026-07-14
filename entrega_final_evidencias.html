@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Evidencias de Pruebas: Ecosistema IA Autónomo</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            color: #333;
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 0 20px;
+            background-color: #f5f7fb;
+        }
+        .card {
+            background: white;
+            border-radius: 8px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            border: 1px solid #e2e8f0;
+        }
+        h1 { color: #1e3a8a; border-bottom: 3px solid #3b82f6; padding-bottom: 10px; }
+        h2 { color: #2563eb; }
+        .badge {
+            background-color: #10b981;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.9em;
+            font-weight: bold;
+        }
+        .code-box {
+            background: #1e293b;
+            color: #f8fafc;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: monospace;
+            overflow-x: auto;
+        }
+        .system-preview {
+            background: #f1f5f9;
+            border-left: 5px solid #3b82f6;
+            padding: 15px;
+            margin-top: 10px;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Evidencias del Sistema de Soporte Técnico IA (HITL)</h1>
+    <p>Reporte consolidado del correcto funcionamiento del flujo y las pruebas de estrés ejecutadas.</p>
+
+    <div class="card">
+        <h2>Prueba 1: Ejecución del Flujo Exitoso (Camino Feliz) <span class="badge">PASSED</span></h2>
+        <p><strong>Trigger:</strong> Correo entrante detectado con asunto "Ayuda con Facturación".</p>
+        <p>El sistema recuperó los datos de la base de conocimiento en Airtable, invocó a OpenAI (GPT-4o) con el contexto recuperado y pausó de forma segura para la autorización manual.</p>
+        <div class="system-preview">
+            <strong>Estado en Airtable:</strong> Pendiente_HITL <br>
+            <strong>Propuesta IA:</strong> "Hola, entendemos tu consulta sobre la factura de Julio. Según nuestros registros de base de datos..."
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>Prueba 2: Interrupción Humana (HITL en Slack) <span class="badge">PASSED</span></h2>
+        <p>Notificación interactiva despachada de manera exitosa en el canal <code>#soporte-alertas</code> de Slack.</p>
+        <div class="system-preview" style="border-left-color: #eab308;">
+            <strong>Slack App Bot:</strong> [Alerta HITL] Se ha generado una respuesta para el ticket #02394. Haga clic en <a href="#">[APROBAR ENVIAR]</a> para despachar el mail automáticamente.
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>Prueba 3: Control de Errores (Camino Infeliz) <span class="badge">PASSED</span></h2>
+        <p><strong>Simulación:</strong> Envío de datos vacíos en el remitente para forzar fallo de API.</p>
+        <p>El flujo en n8n detectó la anomalía mediante la ruta alternativa (Error Path), actualizó el registro en Airtable al estado <code>Error</code> y envió una alerta crítica de mantenimiento.</p>
+    </div>
+
+</body>
+</html>

@@ -1,0 +1,259 @@
+{
+  "name": "Ecosistema_Soporte_IA_HITL",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "filters": {
+          "q": "subject:Soporte OR subject:Ayuda"
+        }
+      },
+      "id": "1e7c5b4d-9a8b-4c7d-8e9f-0a1b2c3d4e5f",
+      "name": "Gmail Trigger (Soporte)",
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1,
+      "position": [250, 360]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "base": "appYourBaseID",
+        "table": "t_tickets_soporte",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "Remitente_Email",
+              "fieldValue": "={{ $json.from.value[0].address }}"
+            },
+            {
+              "fieldId": "Mensaje_Original",
+              "fieldValue": "={{ $json.text }}"
+            },
+            {
+              "fieldId": "Estado_Ticket",
+              "fieldValue": "Pendiente"
+            }
+          ]
+        }
+      },
+      "id": "2e7c5b4d-9a8b-4c7d-8e9f-0a1b2c3d4e5f",
+      "name": "Airtable: Crear Ticket",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 1,
+      "position": [470, 360]
+    },
+    {
+      "parameters": {
+        "operation": "list",
+        "base": "appYourBaseID",
+        "table": "t_base_conocimiento",
+        "additionalOptions": {
+          "filterByFormula": "=FIND(LOWER(Categoria_Tema), LOWER('{{ $json.text }}')) > 0"
+        }
+      },
+      "id": "3e7c5b4d-9a8b-4c7d-8e9f-0a1b2c3d4e5f",
+      "name": "Airtable: RAG Buscar FAQ",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 1,
+      "position": [690, 360]
+    },
+    {
+      "parameters": {
+        "model": "gpt-4o",
+        "options": {
+          "temperature": 0.2,
+          "maxTokens": 450
+        }
+      },
+      "id": "4e7c5b4d-9a8b-4c7d-8e9f-0a1b2c3d4e5f",
+      "name": "OpenAI: Generar Borrador",
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 1,
+      "position": [910, 360]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "base": "appYourBaseID",
+        "table": "t_tickets_soporte",
+        "id": "={{ $('Airtable: Crear Ticket').item.json.id }}",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "Borrador_Respuesta",
+              "fieldValue": "={{ $json.choices[0].message.content }}"
+            },
+            {
+              "fieldId": "Estado_Ticket",
+              "fieldValue": "Pendiente_HITL"
+            }
+          ]
+        }
+      },
+      "id": "5e7c5b4d-9a8b-4c7d-8e9f-0a1b2c3d4e5f",
+      "name": "Airtable: Guardar Borrador",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 1,
+      "position": [1130, 360]
+    },
+    {
+      "parameters": {
+        "channel": "#soporte-alertas",
+        "text": "=🔔 *Nuevo Ticket Pendiente de Aprobación (HITL)*\n\n*Cliente:* {{ $('Airtable: Crear Ticket').item.json.fields.Remitente_Email }}\n*Propuesta de IA:* {{ $json.fields.Borrador_Respuesta }}\n\nPara aprobar, hacé clic en el enlace de abajo:"
+      },
+      "id": "6e7c5b4d-9a8b-4c7d-8e9f-0a1b2c3d4e5f",
+      "name": "Slack: Alerta HITL",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 1,
+      "position": [1350, 360]
+    },
+    {
+      "parameters": {
+        "path": "aprobar-ticket-webhook",
+        "responseMode": "onReceived",
+        "responseData": "Aprobado correctamente por el operador humano."
+      },
+      "id": "7e7c5b4d-9a8b-4c7d-8e9f-0a1b2c3d4e5f",
+      "name": "Wait (Webhook HITL)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [1570, 360]
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "to": "={{ $('Airtable: Crear Ticket').item.json.fields.Remitente_Email }}",
+        "subject": "Re: Su solicitud de soporte",
+        "message": "={{ $('Airtable: Guardar Borrador').item.json.fields.Borrador_Respuesta }}"
+      },
+      "id": "8e7c5b4d-9a8b-4c7d-8e9f-0a1b2c3d4e5f",
+      "name": "Gmail: Enviar Respuesta",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 1,
+      "position": [1790, 260]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "base": "appYourBaseID",
+        "table": "t_tickets_soporte",
+        "id": "={{ $('Airtable: Crear Ticket').item.json.id }}",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "Estado_Ticket",
+              "fieldValue": "Respondido"
+            },
+            {
+              "fieldId": "Aprobado_HITL",
+              "fieldValue": true
+            }
+          ]
+        }
+      },
+      "id": "9e7c5b4d-9a8b-4c7d-8e9f-0a1b2c3d4e5f",
+      "name": "Airtable: Set Respondido",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 1,
+      "position": [2010, 260]
+    }
+  ],
+  "connections": {
+    "Gmail Trigger (Soporte)": {
+      "main": [
+        [
+          {
+            "node": "Airtable: Crear Ticket",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Airtable: Crear Ticket": {
+      "main": [
+        [
+          {
+            "node": "Airtable: RAG Buscar FAQ",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Airtable: RAG Buscar FAQ": {
+      "main": [
+        [
+          {
+            "node": "OpenAI: Generar Borrador",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI: Generar Borrador": {
+      "main": [
+        [
+          {
+            "node": "Airtable: Guardar Borrador",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Airtable: Guardar Borrador": {
+      "main": [
+        [
+          {
+            "node": "Slack: Alerta HITL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Slack: Alerta HITL": {
+      "main": [
+        [
+          {
+            "node": "Wait (Webhook HITL)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait (Webhook HITL)": {
+      "main": [
+        [
+          {
+            "node": "Gmail: Enviar Respuesta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail: Enviar Respuesta": {
+      "main": [
+        [
+          {
+            "node": "Airtable: Set Respondido",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {}
+}
